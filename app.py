@@ -83,7 +83,7 @@ if uploaded_file is not None:
             },
         )
         if st.button('Generate'):
-          answer = query_engine.chat(f" Provide indepth and accurate analysis of {query} try to answer in english, only if user ask for plot then make it charts")
+          answer = query_engine.chat(query)
           if answer!=None:
             st.title(f"🤖: {answer}")
 else:
