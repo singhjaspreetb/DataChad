@@ -2,7 +2,7 @@ import os
 import streamlit as st
 import pandas as pd
 from pandasai import SmartDataframe
-# from pandasai.callbacks import BaseCallback
+from pandasai.callbacks import BaseCallback
 from pandasai.responses.response_parser import ResponseParser
 from groq import Groq
 from langchain_groq import ChatGroq
@@ -10,13 +10,13 @@ os.environ["GROQ_API_KEY"] = "gsk_c1eCd047UvN4oG7VI8daWGdyb3FYZwozEwfBwGfEOSvQLV
 
 client = Groq()
 model = ChatGroq(temperature=0, model_name="llama-3.1-70b-versatile")
-# class StreamlitCallback(BaseCallback):
-#     def __init__(self, container) -> None:
-#         """Initialize callback handler."""
-#         self.container = container
+class StreamlitCallback(BaseCallback):
+    def __init__(self, container) -> None:
+        """Initialize callback handler."""
+        self.container = container
 
-#     def on_code(self, response: str):
-#         self.container.code(response)
+    def on_code(self, response: str):
+        self.container.code(response)
 
 class StreamlitResponse(ResponseParser):
     def __init__(self, context) -> None:
