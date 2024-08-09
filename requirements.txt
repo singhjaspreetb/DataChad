@@ -3,3 +3,4 @@ pandas
 pandasai
 groq
 langchain
+langchain-groq
