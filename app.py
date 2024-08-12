@@ -76,18 +76,19 @@ st.text("This product belongs to NAMA-AI")
 # Sidebar for database connection configuration
 st.sidebar.title("Database Connection Configuration")
 db_type = st.sidebar.selectbox("Select Database Type", ["PostgreSQL", "MySQL", "SQLite", "SQL", "Snowflake", "Databricks"])
-
 if db_type == "PostgreSQL":
-    host = st.sidebar.text_input("Host", "localhost")
+    host = st.sidebar.text_input("Host", "postgres")  
     port = st.sidebar.number_input("Port", 5432)
     database = st.sidebar.text_input("Database", "mydb")
     username = st.sidebar.text_input("Username", "root")
     password = st.sidebar.text_input("Password", "root", type="password")
     table = st.sidebar.text_input("Table", "payments")
     where = st.sidebar.text_input("Filter (optional)", "[['payment_status', '=', 'PAIDOFF']]")
-    print(host+str(port)+database+username+table)
+    print(f"Connecting to {host}:{port} with user {username} to database {database}")
+
     if st.sidebar.button("Connect PostgreSQL"):
         try:
+            where_clause = eval(where) if where else None
             postgres_connector = PostgreSQLConnector(
                 config={
                     "host": host,
@@ -96,13 +97,15 @@ if db_type == "PostgreSQL":
                     "username": username,
                     "password": password,
                     "table": table,
-                    "where": eval(where),
+                    "where": where_clause,
                 }
             )
             df = SmartDataframe(postgres_connector)
             st.success("Connected to PostgreSQL")
+        except psycopg2.OperationalError as e:
+            st.error(f"Operational error: {e}")
         except Exception as e:
-            st.error(f"An error occurred: {e}")
+            st.error(f"An unexpected error occurred: {e}")
 
 elif db_type == "MySQL":
     host = st.sidebar.text_input("Host", "localhost")
