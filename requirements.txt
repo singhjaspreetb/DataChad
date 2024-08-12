@@ -1,6 +1,7 @@
 pandas
 streamlit
 pandasai
+pandasai[connectors]
 langchain-groq
 groq
 psycopg2-binary
@@ -9,3 +10,4 @@ sqlalchemy
 pymysql
 snowflake-connector-python
 databricks-sql-connector
+chardet

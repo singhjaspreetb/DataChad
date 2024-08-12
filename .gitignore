@@ -1,0 +1,6 @@
+.venv
+cache/
+exports/
+myenv/
+*.log
+.env
