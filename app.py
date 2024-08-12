@@ -85,7 +85,7 @@ if db_type == "PostgreSQL":
     password = st.sidebar.text_input("Password", "root", type="password")
     table = st.sidebar.text_input("Table", "payments")
     where = st.sidebar.text_input("Filter (optional)", "[['payment_status', '=', 'PAIDOFF']]")
-    print(host+port+database+username+table)
+    print(host+str(port)+database+username+table)
     if st.sidebar.button("Connect PostgreSQL"):
         try:
             postgres_connector = PostgreSQLConnector(
