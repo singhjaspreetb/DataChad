@@ -385,18 +385,27 @@ elif option == "Database Connection":
                 st.error(f"An error occurred: {e}")
 
     elif db_type == "MongoDB":
-        host = st.sidebar.text_input("Host", "mongodb://localhost:27017")
-        database = st.sidebar.text_input("MYDB")
-        collect= st.sidebar.text_input("MY COLLECTION")
-        query= st.sidebar.text_input("Enter your Query")
+        host = st.sidebar.text_input("Host", "localhost:27017")
+        username = st.sidebar.text_input("Username", value="", key="mongo_user")
+        password = st.sidebar.text_input("Password", value="", type="password", key="mongo_pass")
+        database = st.sidebar.text_input("Database Name")
+        collect = st.sidebar.text_input("Collection Name")
+        query = st.sidebar.text_input("Enter your Query")
+
         if st.sidebar.button("Connect MongoDB"):
             try:
-                client = MongoClient(host)
+                # Construct the MongoDB connection string with authentication
+                mongo_uri = f"mongodb://{username}:{password}@{host}"
+                client = MongoClient(mongo_uri)
+
+                # Access the specified database and collection
                 db = client[database]
                 collection = db[collect]
-                
+
+                # Test the connection
                 client.server_info()
                 st.success("Connected to MongoDB")
+
                 ans=(f"Collection 'my_new_collection' created with document: {collection.find_one()}")
                 document_structure = collection.find_one()
                 if document_structure:
@@ -407,6 +416,8 @@ elif option == "Database Connection":
                     st.write("Found document:", document)
             except ConnectionFailure as e:
                 st.error(f"An error occurred: {e}")
+
+
 
     # Similar logic for other databases...
 
@@ -421,12 +432,18 @@ if st.session_state.df is not None:
                     config={
                         "llm": llm,
                         "response_parser": StreamlitResponse,
-                        "code_to_run": True
+                        "code_to_run": True,
+                        "use_vector_store": False
                     },
                 )
                 if st.button("GENERATE", key="generate_button"):
-                    answer = query_engine.chat(f"Provide formatted answer as you are a business analyst: {query} and provide the most suitable plot. Also, explain plots and provide a complete plot, ignoring null and irrelevant values.")
-                    if answer is not None:
-                        st.title(f"👾 Here is your Analysis: {answer}")
+                    try:
+                        answer = query_engine.chat(f"Provide formatted answer as you are a business analyst: {query} and provide the most suitable plot. Also, explain plots and provide a complete plot, ignoring null and irrelevant values.")
+                        if answer is not None:
+                            st.title(f"👾 Here is your Analysis: {answer}")
+                    except pandasai.exceptions.PandasAIApiCallError as e:
+                        st.error(f"PandasAI API error: {str(e)}. Please try again later.")
+                    except Exception as e:
+                        st.error(f"An unexpected error occurred: {str(e)}")
             except Exception as e:
                 st.error(f"An error occurred while processing the query: {e}")
