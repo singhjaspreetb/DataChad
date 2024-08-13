@@ -2,6 +2,7 @@ pandas
 streamlit
 pandasai
 pandasai[connectors]
+pymongo
 langchain-groq
 groq
 psycopg2-binary

@@ -1,12 +1,17 @@
 import os
 import pandas as pd
 import streamlit as st
+import ast
+import pymongo
+import json
+from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure
 from pandasai import SmartDataframe
 from pandasai.responses.response_parser import ResponseParser
 from pandasai.connectors import (
     PostgreSQLConnector, MySQLConnector, SqliteConnector, SQLConnector
 )
-from pandasai.ee.connectors import SnowFlakeConnector,DatabricksConnector
+from pandasai.ee.connectors import SnowFlakeConnector, DatabricksConnector
 from langchain_groq import ChatGroq
 from groq import Groq
 import chardet  # For automatic encoding detection
@@ -16,8 +21,9 @@ GROQ_API_KEY = os.environ["GROQ_API_KEY"]
 PANDASAI_API_KEY = os.environ['PANDASAI_API_KEY']
 
 # Initialize Groq client and ChatGroq model
-client = Groq()
+llm = Groq()
 model = ChatGroq(temperature=0, model_name="llama-3.1-70b-versatile")
+
 class StreamlitResponse(ResponseParser):
     def __init__(self, context) -> None:
         super().__init__(context)
@@ -84,6 +90,74 @@ def load_file(file) -> pd.DataFrame:
 
     return df
 
+def get_document_structure(doc):
+    """
+    Converts the structure of a MongoDB document into a text representation.
+    
+    Args:
+    - doc (dict): The MongoDB document.
+    
+    Returns:
+    - str: A text representation of the document structure.
+    
+    """
+    lines = []
+    for key, value in doc.items():
+        # Get the type of the value (e.g., str, int, list)
+        value_type = type(value).__name__
+        lines.append(f"{key}: {value_type}")
+    
+    # Join lines into a single string
+    structure_text = "\n".join(lines)
+    return structure_text
+
+def preprocess_json_string(json_string):
+    # Replace single quotes with double quotes
+    json_string = json_string.replace("'", '"')
+    # Ensure keys are enclosed in double quotes
+    # This is a simple fix; more complex adjustments might be needed based on your output
+    if json_string.startswith("{") and json_string.endswith("}"):
+        return json_string
+    return f"{{{json_string}}}"
+
+def mon_query(ques,structure,database,collection):
+    prompt=f"""
+    Task: You are a Mongodb query expert, you are given with the document structure.
+    Databse is already connected.
+    You primary task is to understand users task, based on the given information provide
+    the correct query to fetch the required data.
+
+    structure:{structure}
+    query:{ques}
+    database:{database}
+    collection:{collection}
+
+    response:
+    Only provide query to extract data.
+
+    collection.find_one({{"name": "alice"}})
+
+    Requirements:
+    Only provide the query no explainantion
+    Only provide mongodb query.
+    follow structure of document
+    Use collection to get the query
+    never provide explaination
+    only mongodb query.
+    """
+
+    completion = llm.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        model="llama-3.1-70b-versatile",
+    )
+
+    return completion.choices[0].message.content
+
 # Initialize session state variables
 if "show_db" not in st.session_state:
     st.session_state.show_db = False
@@ -94,30 +168,23 @@ if "df" not in st.session_state:
 st.write("# DATA CHAD")
 st.write("This product belongs to NAMA AI")
 
-
 # Sidebar for toggling between database and file upload
 st.sidebar.title("Navigation")
-option = st.sidebar.radio("Select Option", ["File Upload", "Database Connection"])
-
-# Sidebar for toggling between database and file upload
-
+option = st.sidebar.radio("Select Option", ["File Upload", "Database Connection"], key="option_radio")
 
 if option == "File Upload":
     st.session_state.show_db = False
     uploaded_file = st.file_uploader("Upload your CSV, JSON, or Excel file", type=["csv", "json", "xlsx", "xls"])
 
     if uploaded_file:
-        # Load and display data
         df = load_file(uploaded_file)
+        st.session_state.df = df
 
         if df is not None:
             with st.expander("🔎 Dataframe Preview"):
                 st.write(df)
 
-            # User input for chat query
             query = st.text_area("🗣️ Chat with Dataframe")
-            container = st.container()
-
             if query:
                 try:
                     llm = model
@@ -126,13 +193,11 @@ if option == "File Upload":
                         config={
                             "llm": llm,
                             "response_parser": StreamlitResponse,
-                            "code_to_run":True
+                            "code_to_run": True
                         },
                     )
-                    
                     if st.button("GENERATE"):
-                        # Process query and display result
-                        answer = query_engine.chat(f"provide formatted answer as you are business analyst {query} and provide most suitabole plot, and also explain plots and provide complete plot ignore null and irrelevant values")
+                        answer = query_engine.chat(f"Provide formatted answer as you are a business analyst: {query} and provide the most suitable plot. Also, explain plots and provide a complete plot, ignoring null and irrelevant values.")
                         if answer is not None:
                             st.title(f"👾 Here is your Analysis: {answer}")
                 except Exception as e:
@@ -140,21 +205,20 @@ if option == "File Upload":
     else:
         st.info("Please upload a CSV, JSON, or Excel file to get started.")
 
-
 elif option == "Database Connection":
     st.session_state.show_db = True
     st.sidebar.title("Database Connection Configuration")
-    db_type = st.sidebar.selectbox("Select Database Type", ["PostgreSQL", "MySQL", "SQLite", "SQL", "Snowflake", "Databricks"])
+    db_type = st.sidebar.selectbox("Select Database Type", ["PostgreSQL", "MySQL", "SQLite", "SQL", "Snowflake", "Databricks","MongoDB"])
 
     # Database connection logic goes here (unchanged)
 
     if db_type == "PostgreSQL":
-        host = st.sidebar.text_input("Host", "localhost")  
+        host = st.sidebar.text_input("Host", "postgres")  
         port = st.sidebar.number_input("Port", 5432)
-        database = st.sidebar.text_input("Database", "database")
-        username = st.sidebar.text_input("Username", "user")
-        password = st.sidebar.text_input("Password", "password", type="password")
-        table = st.sidebar.text_input("Table", "table")
+        database = st.sidebar.text_input("Database", "mydb")
+        username = st.sidebar.text_input("Username", "root")
+        password = st.sidebar.text_input("Password", "root", type="password")
+        table = st.sidebar.text_input("Table", "payments")
         where = st.sidebar.text_input("Filter (optional)", "")
         query= st.sidebar.text_input("Enter your Query")
         if st.sidebar.button("Connect PostgreSQL"):
@@ -319,3 +383,50 @@ elif option == "Database Connection":
                 st.title(answer)
             except Exception as e:
                 st.error(f"An error occurred: {e}")
+
+    elif db_type == "MongoDB":
+        host = st.sidebar.text_input("Host", "mongodb://localhost:27017")
+        database = st.sidebar.text_input("MYDB")
+        collect= st.sidebar.text_input("MY COLLECTION")
+        query= st.sidebar.text_input("Enter your Query")
+        if st.sidebar.button("Connect MongoDB"):
+            try:
+                client = MongoClient(host)
+                db = client[database]
+                collection = db[collect]
+                
+                client.server_info()
+                st.success("Connected to MongoDB")
+                ans=(f"Collection 'my_new_collection' created with document: {collection.find_one()}")
+                document_structure = collection.find_one()
+                if document_structure:
+                    structure = get_document_structure(document_structure)
+                    generated_query = mon_query(query, structure,database,collection)
+                    ans = eval(generated_query)
+                    document = ans
+                    st.write("Found document:", document)
+            except ConnectionFailure as e:
+                st.error(f"An error occurred: {e}")
+
+    # Similar logic for other databases...
+
+if st.session_state.df is not None:
+    with st.container():
+        query = st.text_area("🗣️ Chat with Dataframe", key="chat_query")
+        if query:
+            try:
+                llm = model
+                query_engine = SmartDataframe(
+                    st.session_state.df,
+                    config={
+                        "llm": llm,
+                        "response_parser": StreamlitResponse,
+                        "code_to_run": True
+                    },
+                )
+                if st.button("GENERATE", key="generate_button"):
+                    answer = query_engine.chat(f"Provide formatted answer as you are a business analyst: {query} and provide the most suitable plot. Also, explain plots and provide a complete plot, ignoring null and irrelevant values.")
+                    if answer is not None:
+                        st.title(f"👾 Here is your Analysis: {answer}")
+            except Exception as e:
+                st.error(f"An error occurred while processing the query: {e}")
