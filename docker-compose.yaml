@@ -10,6 +10,38 @@ services:
       - "27017:27017"
     volumes:
       - mongodata:/data/db
+  postgres:
+    image: 'postgres:latest'
+    container_name: local_postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:  
+      POSTGRES_DB: chad_database
+      POSTGRES_USER: chad_user
+      POSTGRES_PASSWORD: chad_password
+    volumes:
+      - local_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
+      interval: 1s
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: local_pgadmin4
+    restart: always
+    ports:
+      - "5051:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: user@chad.com
+      PGADMIN_DEFAULT_PASSWORD: datachad
+    volumes:
+      - local_pgadmin:/var/lib/pgadmin
+    network_mode: bridge
+networks:
+  todo-network:
+    driver: bridge
 volumes:
+  local_postgres:
+  local_pgadmin:
   mongodata:
     driver: local
