@@ -42,7 +42,7 @@ llm_type = st.sidebar.selectbox("Select Model", llm_types)
 model = ChatGroq(temperature=0, model_name=llm_type)
 
 
-def prompt(user_input):
+def prompt_user(user_input):
     return f"""# Data Analytics Expert Prompt
 
         You are an expert data analyst with extensive experience in business intelligence, statistical analysis, and data-driven decision making. Your role is to assist users in extracting meaningful insights from their data to solve complex business problems and drive strategic decisions.
@@ -293,7 +293,6 @@ if option == "File Upload":
                 st.write(df)
 
             query = st.text_area("🗣️ Chat with Dataframe")
-            query = prompt(query)
             if query:
                 try:
                     llm = model
@@ -330,7 +329,7 @@ elif option == "Database Connection":
         table = st.sidebar.text_input("Table", "payments")
         where = st.sidebar.text_input("Filter (optional)", "")
         query= st.sidebar.text_input("Enter your Query")
-        query = prompt(query)
+        query = prompt_user(query)
         if st.sidebar.button("Connect PostgreSQL"):
             try:
                 where_clause = eval(where) if where else None
@@ -362,7 +361,7 @@ elif option == "Database Connection":
         table = st.sidebar.text_input("Table", "loans")
         where = st.sidebar.text_input("Filter (optional)", "[['loan_status', '=', 'PAIDOFF']]")
         query= st.sidebar.text_input("Enter your Query")
-        query = prompt(query)
+        query = prompt_user(query)
         if st.sidebar.button("Connect MySQL"):
             try:
                 mysql_connector = MySQLConnector(
@@ -388,7 +387,7 @@ elif option == "Database Connection":
         table = st.sidebar.text_input("Table", "actor")
         where = st.sidebar.text_input("Filter (optional)", "[['first_name', '=', 'PENELOPE']]")
         query= st.sidebar.text_input("Enter your Query")
-        query = prompt(query)
+        query = prompt_user(query)
         if st.sidebar.button("Connect SQLite"):
             try:
                 sqlite_connector = SqliteConnector(
@@ -414,7 +413,7 @@ elif option == "Database Connection":
         table = st.sidebar.text_input("Table", "loans")
         where = st.sidebar.text_input("Filter (optional)", "[['loan_status', '=', 'PAIDOFF']]")
         query= st.sidebar.text_input("Enter your Query")
-        query = prompt(query)
+        query = prompt_user(query)
         if st.sidebar.button("Connect SQL"):
             try:
                 sql_connector = SQLConnector(
@@ -447,7 +446,7 @@ elif option == "Database Connection":
         dbSchema = st.sidebar.text_input("Schema", "tpch_sf1")
         where = st.sidebar.text_input("Filter (optional)", "[['l_quantity', '>', '49']]")
         query= st.sidebar.text_input("Enter your Query")
-        query = prompt(query)
+        query = prompt_user(query)
         if st.sidebar.button("Connect Snowflake"):
             try:
                 snowflake_connector = SnowFlakeConnector(
@@ -478,7 +477,7 @@ elif option == "Database Connection":
         httpPath = st.sidebar.text_input("HTTP Path", "/sql/1.0/warehouses/213421312")
         where = st.sidebar.text_input("Filter (optional)", "[['loan_status', '=', 'PAIDOFF']]")
         query= st.sidebar.text_input("Enter your Query")
-        query = prompt(query)
+        query = prompt_user(query)
         if st.sidebar.button("Connect Databricks"):
             try:
                 databricks_connector = DatabricksConnector(
