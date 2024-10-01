@@ -16,11 +16,10 @@ from langchain_groq import ChatGroq
 from groq import Groq
 import chardet  # For automatic encoding detection
 
-# Set environment variable for Groq API key
-# GROQ_API_KEY = os.environ["GROQ_API_KEY"]
-# PANDASAI_API_KEY = os.environ['PANDASAI_API_KEY']
-os.environ["GROQ_API_KEY"] = "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"
-# Initialize Groq client and ChatGroq model
+
+GROQ_API_KEY = os.environ["GROQ_API_KEY"]
+PANDASAI_API_KEY = os.environ['PANDASAI_API_KEY']
+
 llm = Groq()
 llm_types = [
     "llama-3.2-90b-text-preview",
