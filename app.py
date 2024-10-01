@@ -291,7 +291,6 @@ if option == "File Upload":
         if df is not None:
             with st.expander("🔎 Dataframe Preview"):
                 st.write(df)
-
             query = st.text_area("🗣️ Chat with Dataframe")
             if query:
                 try:
