@@ -17,13 +17,122 @@ from groq import Groq
 import chardet  # For automatic encoding detection
 
 # Set environment variable for Groq API key
-GROQ_API_KEY = os.environ["GROQ_API_KEY"]
-PANDASAI_API_KEY = os.environ['PANDASAI_API_KEY']
-
+# GROQ_API_KEY = os.environ["GROQ_API_KEY"]
+# PANDASAI_API_KEY = os.environ['PANDASAI_API_KEY']
+os.environ["GROQ_API_KEY"] = "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"
 # Initialize Groq client and ChatGroq model
 llm = Groq()
-model = ChatGroq(temperature=0, model_name="llama-3.1-70b-versatile")
+llm_types = [
+    "llama-3.2-90b-text-preview",
+    "llama-3.2-11b-text-preview",
+    "llama-3.2-3b-preview",
+    "llama-3.2-1b-preview",
+    "llama-3.1-70b-versatile",
+    "llama-3.1-8b-instant",
+    "llama3-groq-70b-8192-tool-use-preview",
+    "llama3-groq-8b-8192-tool-use-preview",
+    "llama-guard-3-8b",
+    "llama3-70b-8192",
+    "llama3-8b-8192",
+    "mixtral-8x7b-32768",
+    "gemma-7b-it",
+    "gemma2-9b-it"
+]
+llm_type = st.sidebar.selectbox("Select Model", llm_types)
 
+model = ChatGroq(temperature=0, model_name=llm_type)
+
+
+def prompt(user_input):
+    return f"""# Data Analytics Expert Prompt
+
+        You are an expert data analyst with extensive experience in business intelligence, statistical analysis, and data-driven decision making. Your role is to assist users in extracting meaningful insights from their data to solve complex business problems and drive strategic decisions.
+
+        ## Your Expertise:
+
+        1. Data Analysis Techniques:
+        - Descriptive, diagnostic, predictive, and prescriptive analytics
+        - Statistical analysis (regression, hypothesis testing, time series analysis)
+        - Machine learning algorithms (classification, clustering, anomaly detection)
+        - Data mining and pattern recognition
+
+        2. Business Intelligence:
+        - KPI development and tracking
+        - Dashboard creation and data visualization
+        - Performance measurement and benchmarking
+        - Competitive analysis and market trends
+
+        3. Data Management:
+        - Data quality assessment and cleansing
+        - ETL processes and data integration
+        - Database management and SQL querying
+        - Big data technologies (Hadoop, Spark)
+
+        4. Industry-Specific Knowledge:
+        - Retail, finance, healthcare, manufacturing, and technology sectors
+        - Industry-specific metrics and benchmarks
+        - Regulatory compliance and data governance
+
+        ## Your Approach:
+
+        1. Problem Definition:
+        - Clearly define the business problem or question
+        - Identify key stakeholders and their requirements
+        - Determine the scope and limitations of the analysis
+
+        2. Data Assessment:
+        - Evaluate available data sources and their relevance
+        - Assess data quality, completeness, and reliability
+        - Identify any data gaps or additional data needs
+
+        3. Analysis Planning:
+        - Determine appropriate analytical techniques
+        - Outline the step-by-step analysis process
+        - Consider potential challenges and mitigation strategies
+
+        4. Data Exploration and Preprocessing:
+        - Perform exploratory data analysis (EDA)
+        - Clean and preprocess data as necessary
+        - Create derived variables or features if needed
+
+        5. In-depth Analysis:
+        - Apply chosen analytical techniques
+        - Validate results and test for statistical significance
+        - Iterate and refine the analysis as needed
+
+        6. Interpretation and Insights:
+        - Translate analytical findings into business insights
+        - Identify actionable recommendations
+        - Quantify potential impact and ROI of recommendations
+
+        7. Communication and Visualization:
+        - Create clear, concise visualizations to support findings
+        - Develop a narrative that tells the data story
+        - Tailor communication to the audience's technical level
+
+        8. Implementation and Monitoring:
+        - Propose an action plan for implementing recommendations
+        - Suggest metrics for monitoring the impact of changes
+        - Recommend follow-up analyses or data collection
+
+        ## Your Output:
+
+        When responding to user queries, provide:
+
+        1. A summary of the problem and approach
+        2. Key findings and insights, supported by data
+        3. Actionable recommendations with potential impact
+        4. Visualizations or tables to illustrate important points
+        5. Limitations of the analysis and areas for further investigation
+        6. Next steps or follow-up questions to deepen the analysis
+
+        Remember to always consider the business context, potential biases, and ethical implications of your analysis. Strive to provide accurate, unbiased, and actionable insights that drive measurable business value.
+
+        ## User Query:
+
+        {user_input}
+
+        Please address the above user query using your expertise and approach outlined in this prompt. Provide a comprehensive analysis and actionable recommendations based on the given information."""
 class StreamlitResponse(ResponseParser):
     def __init__(self, context) -> None:
         super().__init__(context)
@@ -153,7 +262,7 @@ def mon_query(ques,structure,database,collection):
                 "content": prompt
             }
         ],
-        model="llama-3.1-70b-versatile",
+        model=llm_type,
     )
 
     return completion.choices[0].message.content
@@ -185,6 +294,7 @@ if option == "File Upload":
                 st.write(df)
 
             query = st.text_area("🗣️ Chat with Dataframe")
+            query = prompt(query)
             if query:
                 try:
                     llm = model
@@ -221,6 +331,7 @@ elif option == "Database Connection":
         table = st.sidebar.text_input("Table", "payments")
         where = st.sidebar.text_input("Filter (optional)", "")
         query= st.sidebar.text_input("Enter your Query")
+        query = prompt(query)
         if st.sidebar.button("Connect PostgreSQL"):
             try:
                 where_clause = eval(where) if where else None
@@ -252,6 +363,7 @@ elif option == "Database Connection":
         table = st.sidebar.text_input("Table", "loans")
         where = st.sidebar.text_input("Filter (optional)", "[['loan_status', '=', 'PAIDOFF']]")
         query= st.sidebar.text_input("Enter your Query")
+        query = prompt(query)
         if st.sidebar.button("Connect MySQL"):
             try:
                 mysql_connector = MySQLConnector(
@@ -277,6 +389,7 @@ elif option == "Database Connection":
         table = st.sidebar.text_input("Table", "actor")
         where = st.sidebar.text_input("Filter (optional)", "[['first_name', '=', 'PENELOPE']]")
         query= st.sidebar.text_input("Enter your Query")
+        query = prompt(query)
         if st.sidebar.button("Connect SQLite"):
             try:
                 sqlite_connector = SqliteConnector(
@@ -302,6 +415,7 @@ elif option == "Database Connection":
         table = st.sidebar.text_input("Table", "loans")
         where = st.sidebar.text_input("Filter (optional)", "[['loan_status', '=', 'PAIDOFF']]")
         query= st.sidebar.text_input("Enter your Query")
+        query = prompt(query)
         if st.sidebar.button("Connect SQL"):
             try:
                 sql_connector = SQLConnector(
@@ -334,6 +448,7 @@ elif option == "Database Connection":
         dbSchema = st.sidebar.text_input("Schema", "tpch_sf1")
         where = st.sidebar.text_input("Filter (optional)", "[['l_quantity', '>', '49']]")
         query= st.sidebar.text_input("Enter your Query")
+        query = prompt(query)
         if st.sidebar.button("Connect Snowflake"):
             try:
                 snowflake_connector = SnowFlakeConnector(
@@ -364,6 +479,7 @@ elif option == "Database Connection":
         httpPath = st.sidebar.text_input("HTTP Path", "/sql/1.0/warehouses/213421312")
         where = st.sidebar.text_input("Filter (optional)", "[['loan_status', '=', 'PAIDOFF']]")
         query= st.sidebar.text_input("Enter your Query")
+        query = prompt(query)
         if st.sidebar.button("Connect Databricks"):
             try:
                 databricks_connector = DatabricksConnector(
@@ -391,7 +507,6 @@ elif option == "Database Connection":
         database = st.sidebar.text_input("Database Name")
         collect = st.sidebar.text_input("Collection Name")
         query = st.sidebar.text_input("Enter your Query")
-
         if st.sidebar.button("Connect MongoDB"):
             try:
                 # Construct the MongoDB connection string with authentication
